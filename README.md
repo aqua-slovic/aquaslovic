@@ -1,16 +1,13 @@
-<<<<<<< HEAD
-# aquaslovic
-AquaSlovic is a cross-platform network security toolkit for Linux and Windows. It features network scanning, packet sniffing, ARP and DNS spoofing, transparent HTTP proxying with JS injection, and secure peer-to-peer file transfer with SHA-256 verification and peer auto-discovery.
-=======
-# 🌊 AQUA_SLOVIC — Cross-Platform Network Security Toolkit
+
+# AQUA_SLOVIC — Cross-Platform Network Security Toolkit
 
 > A powerful network security toolkit inspired by bettercap, with an added **peer-to-peer file transfer** feature. Works on both **Linux** and **Windows**.
 
-⚠️ **DISCLAIMER**: This tool is for **authorized security testing and network administration only**. Unauthorized use against networks you do not own or have permission to test is **illegal**. You are responsible for your own actions.
+**DISCLAIMER**: This tool is for **authorized security testing and network administration only**. Unauthorized use against networks you do not own or have permission to test is **illegal**. You are responsible for your own actions.
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Features](#-features)
 - [Installation](#-installation)
@@ -46,7 +43,7 @@ AquaSlovic is a cross-platform network security toolkit for Linux and Windows. I
 
 ---
 
-## 📦 Installation
+##  Installation
 
 ### Linux
 
@@ -110,7 +107,7 @@ aqua_slovic » exit                                  # Quit
 
 ---
 
-## 📖 Commands Reference
+##  Commands Reference
 
 ### General Commands
 
@@ -126,7 +123,7 @@ aqua_slovic » exit                                  # Quit
 
 ---
 
-### 🔍 Network Scanner (`net.scan`)
+### Network Scanner (`net.scan`)
 
 Discover all devices connected to your local network.
 
@@ -181,7 +178,7 @@ aqua_slovic » net.scan ping
 
 ---
 
-### 📡 Packet Sniffer (`net.sniff`)
+###  Packet Sniffer (`net.sniff`)
 
 Capture network packets in real-time with protocol analysis and credential detection.
 
@@ -246,7 +243,7 @@ aqua_slovic » net.sniff off
 Perform ARP cache poisoning to position yourself as a Man-in-the-Middle between a target and the gateway.
 
 > **Requires**: root (Linux) or Administrator (Windows)
-> ⚠️ **Only use on networks you own or have explicit permission to test!**
+>  **Only use on networks you own or have explicit permission to test!**
 
 #### Commands
 
@@ -290,7 +287,7 @@ aqua_slovic » arp.spoof off
 
 ---
 
-### 🌐 DNS Spoofer (`dns.spoof`)
+###  DNS Spoofer (`dns.spoof`)
 
 Intercept DNS queries and redirect domains to your chosen IP addresses.
 
@@ -355,7 +352,7 @@ aqua_slovic » arp.spoof off
 
 ---
 
-### 🔌 HTTP Proxy (`http.proxy`)
+###  HTTP Proxy (`http.proxy`)
 
 A transparent HTTP proxy for inspecting and modifying web traffic.
 
@@ -401,15 +398,15 @@ aqua_slovic » http.proxy off
 
 ---
 
-### 📁 File Transfer (`file.send` / `file.receive`)
+###  File Transfer (`file.send` / `file.receive`)
 
 **The unique AQUA_SLOVIC feature!** Send any file (documents, images, videos, archives — anything) to any device on the same network.
 
-- ✅ No root/admin needed
-- ✅ Works on Linux & Windows
-- ✅ SHA-256 checksum verification
-- ✅ Progress bar with transfer speed
-- ✅ Auto-discovery of peers
+-  No root/admin needed
+-  Works on Linux & Windows
+-  SHA-256 checksum verification
+-  Progress bar with transfer speed
+-  Auto-discovery of peers
 
 #### Commands
 
@@ -493,7 +490,7 @@ aqua_slovic » file.receive off
 
 ---
 
-## ⚙️ Session Variables
+##  Session Variables
 
 Use `set` and `get` to configure behavior. Use `env` to see all variables.
 
@@ -516,7 +513,7 @@ aqua_slovic » env
 
 ---
 
-## 🎯 Full Examples
+##  Full Examples
 
 ### Example 1: Discover Devices and Send a File
 
@@ -618,7 +615,7 @@ aqua_slovic » file.receive on 5555       # Use a different port
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 slovic/
@@ -642,7 +639,7 @@ slovic/
 
 ---
 
-## 📜 License
+## License
 
 This project is provided as-is for educational and authorized security testing purposes.
 
