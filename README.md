@@ -650,5 +650,4 @@ This project is provided as-is for educational and authorized security testing p
 
 ---
 
-*Built with ❤️ by AQUA_SLOVIC*
->>>>>>> 31e8faa (feat: implement peer-to-peer file transfer module with discovery and progress tracking)
+*program was built by AQUA_SLOVIC*
