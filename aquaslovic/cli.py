@@ -29,7 +29,6 @@ from aquaslovic.core.sniffer import PacketSniffer
 from aquaslovic.core.arpspoof import ARPSpoofer
 from aquaslovic.core.dnsspoof import DNSSpoofer
 from aquaslovic.core.httpproxy import HTTPProxy
-from aquaslovic.core.filetransfer import FileTransfer
 
 
 class AquaSlovicCLI:
@@ -41,7 +40,6 @@ class AquaSlovicCLI:
         self.arp_spoofer = ARPSpoofer()
         self.dns_spoofer = DNSSpoofer()
         self.http_proxy = HTTPProxy()
-        self.file_transfer = FileTransfer()
 
         # Session variables
         self.variables = {
@@ -51,8 +49,6 @@ class AquaSlovicCLI:
             "arp.gateway": get_gateway_ip() or "",
             "dns.spoof.domains": "",
             "http.proxy.port": "8080",
-            "file.port": "9876",
-            "file.save_dir": os.path.expanduser("~/AQUA_SLOVIC_Received"),
         }
 
         # Command map
@@ -68,12 +64,10 @@ class AquaSlovicCLI:
             "env": self._cmd_env,
             "net.scan": self._cmd_net_scan,
             "net.sniff": self._cmd_net_sniff,
+            "net.internet": self._cmd_net_internet,
             "arp.spoof": self._cmd_arp_spoof,
             "dns.spoof": self._cmd_dns_spoof,
             "http.proxy": self._cmd_http_proxy,
-            "file.send": self._cmd_file_send,
-            "file.receive": self._cmd_file_receive,
-            "file.discover": self._cmd_file_discover,
         }
 
     def run(self):
@@ -160,9 +154,10 @@ class AquaSlovicCLI:
                 ("clear", "Clear the screen"),
                 ("exit / quit", "Exit AQUA_SLOVIC"),
             ]),
-            ("Network Discovery", [
+            ("Network Discovery & Intel", [
                 ("net.scan", "Scan the network for devices (ARP scan)"),
                 ("net.scan ping", "Scan using ping sweep (no root needed)"),
+                ("net.internet", "Show active internet status & local network client count"),
             ]),
             ("Packet Sniffing", [
                 ("net.sniff on [filter]", "Start packet capture"),
@@ -186,12 +181,6 @@ class AquaSlovicCLI:
                 ("http.proxy inject <js>", "Inject JS into HTML responses"),
                 ("http.proxy inject off", "Clear JS injection"),
             ]),
-            ("File Transfer", [
-                ("file.send <ip> <filepath>", "Send a file to a target IP"),
-                ("file.receive on [port]", "Start file receiver server"),
-                ("file.receive off", "Stop file receiver"),
-                ("file.discover", "Find other AQUA_SLOVIC peers on network"),
-            ]),
         ]
 
         for section_name, cmds in sections:
@@ -207,6 +196,7 @@ class AquaSlovicCLI:
   net.scan — Network Discovery Module
 
   Discovers all devices on your local network.
+  Search can only happen on networks you are connected to.
 
   Commands:
     net.scan           ARP scan (fast, requires root/admin)
@@ -216,6 +206,14 @@ class AquaSlovicCLI:
   Variables:
     set net.subnet <CIDR>   Set the target subnet
     set net.interface <if>  Set the network interface
+""",
+            "net.internet": """
+  net.internet — Active Internet & Client Detection Module
+
+  Retrieves host internet status and analyzes local network device population.
+
+  Commands:
+    net.internet       Performs connectivity tests and counts local clients
 """,
             "net.sniff": """
   net.sniff — Packet Sniffer Module
@@ -282,30 +280,7 @@ class AquaSlovicCLI:
   Variables:
     set http.proxy.port <port>  Set default proxy port
 """,
-            "file.send": """
-  file.send / file.receive — File Transfer Module
-
-  Send any file to any device running AQUA_SLOVIC on the same network.
-  No root/admin needed. Uses TCP with SHA-256 verification.
-
-  Commands:
-    file.send <ip> <filepath>   Send a file to target IP
-    file.receive on [port]      Start file receiver (default: 9876)
-    file.receive off            Stop file receiver
-    file.discover               Find AQUA_SLOVIC peers on the network
-
-  Variables:
-    set file.port <port>         Set transfer port
-    set file.save_dir <path>     Set download directory
-
-  How it works:
-    1. Machine A: file.receive on
-    2. Machine B: file.send <A's IP> /path/to/file.pdf
-    3. File transfers with progress bar and checksum verification
-""",
         }
-        helps["file.receive"] = helps["file.send"]
-        helps["file.discover"] = helps["file.send"]
 
         if module in helps:
             print(helps[module])
@@ -321,8 +296,17 @@ class AquaSlovicCLI:
             print_info("Use 'env' to see all variables.")
             return
 
-        var = args[0]
+        var = args[0].lower()
         val = " ".join(args[1:])
+
+        if var == "net.subnet":
+            from aquaslovic.core.utils import is_subnet_connected
+            if not is_subnet_connected(val):
+                print_error("Error: Search must only happen on a network you are connected to.")
+                return
+
+        if var not in self.variables:
+            print_warning(f"Setting new session variable: {var}")
 
         self.variables[var] = val
         print_success(f"{var} → {Fore.WHITE}{val}{Style.RESET_ALL}")
@@ -333,7 +317,7 @@ class AquaSlovicCLI:
             print_error("Usage: get <variable>")
             return
 
-        var = args[0]
+        var = args[0].lower()
         if var in self.variables:
             print_info(f"{var} = {Fore.WHITE}{self.variables[var]}{Style.RESET_ALL}")
         else:
@@ -360,6 +344,49 @@ class AquaSlovicCLI:
             if subnet == "auto":
                 subnet = None
             self.scanner.arp_scan(subnet)
+
+    # ── Active Internet & Client Detection ──────────────────────────────
+
+    def _cmd_net_internet(self, args):
+        """Execute active internet testing and client scanning."""
+        from aquaslovic.core.utils import check_internet_connection, get_subnet
+        
+        print_info("Conducting internet connectivity tests...")
+        online, rtt = check_internet_connection()
+        if online:
+            print_success(f"Internet Status  : {Fore.GREEN}ONLINE{Style.RESET_ALL} (Ping RTT: {rtt}ms)")
+        else:
+            print_warning(f"Internet Status  : {Fore.RED}OFFLINE{Style.RESET_ALL}")
+
+        subnet = self.variables.get("net.subnet")
+        if subnet == "auto":
+            subnet = get_subnet()
+
+        if not subnet:
+            print_error("Could not obtain connected subnet CIDR to list local clients.")
+            return
+
+        print_info(f"Scanning {subnet} to count online network devices...")
+        
+        # Divert output of net.scan ping or scan results to avoid output pollution if we want a clean count
+        # Or, we can simply execute ARP scan or ping sweep programmatically and print the result count.
+        # Let's count hosts by executing Scanner results directly in-memory to get a precise read.
+        try:
+            # Re-read network scanner results
+            prev_results = self.scanner.results
+            
+            # Run scan quietly or normally. Let's do a fast ARP scan or fall back to ping sweep.
+            # To be friendly, let's use scanner's scanning methods but count them nicely.
+            if is_root():
+                # Temporarily redirect output or let it scan
+                self.scanner.arp_scan(subnet)
+            else:
+                self.scanner.ping_sweep(subnet)
+                
+            active_count = len(self.scanner.results)
+            print_success(f"Intranet Status  : {Fore.WHITE}{active_count} active device(s) found on {subnet}{Style.RESET_ALL}")
+        except Exception as e:
+            print_error(f"Failed to scan local network: {e}")
 
     # ── Packet Sniffer ──────────────────────────────────────────────────
 
@@ -477,42 +504,6 @@ class AquaSlovicCLI:
         else:
             print_error("Usage: http.proxy on [port] | off | inject <js>")
 
-    # ── File Transfer ───────────────────────────────────────────────────
-
-    def _cmd_file_send(self, args):
-        """Send a file to a target IP."""
-        if len(args) < 2:
-            print_error("Usage: file.send <target_ip> <filepath>")
-            return
-
-        target_ip = args[0]
-        filepath = " ".join(args[1:])  # Handle paths with spaces
-        port = int(self.variables.get("file.port", 9876))
-        self.file_transfer.send_file(target_ip, filepath, port)
-
-    def _cmd_file_receive(self, args):
-        """Start or stop file receiver."""
-        if not args:
-            print_error("Usage: file.receive on [port] | file.receive off")
-            return
-
-        action = args[0].lower()
-
-        if action == "on":
-            port = int(args[1]) if len(args) > 1 else int(self.variables.get("file.port", 9876))
-            save_dir = self.variables.get("file.save_dir")
-            self.file_transfer.start_receiver(port, save_dir)
-
-        elif action == "off":
-            self.file_transfer.stop_receiver()
-
-        else:
-            print_error("Usage: file.receive on [port] | file.receive off")
-
-    def _cmd_file_discover(self, args):
-        """Discover AQUA_SLOVIC peers on the network."""
-        self.file_transfer.discover_peers()
-
     # ── General ─────────────────────────────────────────────────────────
 
     def _cmd_clear(self, args):
@@ -536,5 +527,3 @@ class AquaSlovicCLI:
             self.dns_spoofer.stop()
         if self.http_proxy.running:
             self.http_proxy.stop()
-        if self.file_transfer.receive_running:
-            self.file_transfer.stop_receiver()

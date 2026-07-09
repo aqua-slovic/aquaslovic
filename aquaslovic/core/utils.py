@@ -25,7 +25,8 @@ BANNER = rf"""
 {Style.RESET_ALL}
 {Fore.WHITE}  AquaSlovic v1.0.0 - Network Security Toolkit{Style.RESET_ALL}
 {Fore.YELLOW}  For authorized security testing only{Style.RESET_ALL}
-{Fore.GREEN}  For more information visit wisdom-malata.vercel.app{Style.RESET_ALL}
+{Fore.GREEN}  Auto-receive enabled - send files without receiver setup{Style.RESET_ALL}
+{Fore.CYAN}  For more information visit wisdom-malata.vercel.app{Style.RESET_ALL}
 """
 
 
@@ -113,6 +114,9 @@ def require_root():
 
 def get_default_interface():
     """Get the default network interface name."""
+    if is_windows():
+        return None  # Windows uses scapy's conf.iface
+
     try:
         import netifaces
         gateways = netifaces.gateways()
@@ -122,8 +126,6 @@ def get_default_interface():
     except Exception:
         pass
 
-    if is_windows():
-        return None  # Windows uses scapy's conf.iface
     return "eth0"
 
 
@@ -170,6 +172,88 @@ def get_gateway_ip():
         pass
 
     return None
+
+
+def get_connected_subnets():
+    """Get the subnets of all active/connected local interfaces (excluding loopback)."""
+    import ipaddress
+    subnets = []
+    
+    # 1. Get subnet via get_subnet() (our detected default default interface subnet)
+    default_sub = get_subnet()
+    if default_sub:
+        try:
+            subnets.append(ipaddress.IPv4Network(default_sub, strict=False))
+        except ValueError:
+            pass
+
+    # 2. Query all netifaces to find all IPs and netmasks
+    try:
+        import netifaces
+        for iface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(iface)
+            if netifaces.AF_INET in addrs:
+                for addr_info in addrs[netifaces.AF_INET]:
+                    ip = addr_info.get("addr")
+                    netmask = addr_info.get("netmask")
+                    if ip and netmask and ip != "127.0.0.1":
+                        try:
+                            # Convert netmask representation to CIDR prefix length
+                            prefix = sum(bin(int(x)).count("1") for x in netmask.split("."))
+                            subnets.append(ipaddress.IPv4Network(f"{ip}/{prefix}", strict=False))
+                        except ValueError:
+                            pass
+    except Exception:
+        pass
+
+    # Unique subnets
+    unique_networks = []
+    for sub in subnets:
+        if sub not in unique_networks:
+            unique_networks.append(sub)
+    return unique_networks
+
+
+def is_subnet_connected(subnet_str):
+    """Check if the given subnet target is connected to the host."""
+    import ipaddress
+    if not subnet_str or subnet_str.lower() == "auto":
+        return True  # 'auto' resolves to local subnet, which is connected
+        
+    try:
+        # Standardize subnet string
+        if "/" not in subnet_str:
+            # Single host IP targeted, check if it fits in any connected subnets or matches host
+            target_ip = ipaddress.IPv4Address(subnet_str)
+            for net in get_connected_subnets():
+                if target_ip in net:
+                    return True
+            return False
+            
+        target_net = ipaddress.IPv4Network(subnet_str, strict=False)
+        for net in get_connected_subnets():
+            # Check overlap or containment
+            if target_net.overlaps(net) or target_net == net:
+                return True
+    except ValueError:
+        return False
+    return False
+
+
+def check_internet_connection():
+    """Check internet connectivity by attempting to connect or ping a reliable IP address."""
+    import time
+    try:
+        start_time = time.time()
+        # Connect to a public DNS server
+        socket.setdefaulttimeout(2.0)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("8.8.8.8", 53))
+        s.close()
+        rtt = int((time.time() - start_time) * 1000)
+        return True, rtt
+    except Exception:
+        return False, None
 
 
 def get_subnet():
@@ -256,7 +340,7 @@ def _resolve_netbios(ip_addr):
             ).decode(errors="ignore")
             for line in output.splitlines():
                 line = line.strip()
-                if "<00>" in line and "UNIQUE" in line:
+                if "<00>" in line and "UNIQUE" in line.upper():
                     name = line.split("<00>")[0].strip()
                     if name and not name.startswith("__"):
                         return name
@@ -284,13 +368,18 @@ def _resolve_mdns(ip_addr):
                 ["ping", "-a", "-n", "1", "-w", "1000", ip_addr],
                 timeout=4, stderr=subprocess.DEVNULL
             ).decode(errors="ignore")
-            # ping -a resolves the hostname and shows it in the output
-            # e.g. "Pinging DESKTOP-ABC1234 [192.168.1.5]"
+            # Search for a line containing the IP in brackets, e.g. "[192.168.1.5]"
+            # This makes the hostname extraction independent of Windows system language.
             for line in output.splitlines():
-                if "Pinging" in line and "[" in line:
-                    name = line.split("Pinging")[1].split("[")[0].strip()
-                    if name and name != ip_addr:
-                        return name
+                if f"[{ip_addr}]" in line:
+                    before_bracket = line.split(f"[{ip_addr}]")[0].strip()
+                    # Grab the last token on the left side of the bracket
+                    parts = before_bracket.split()
+                    if parts:
+                        name = parts[-1]
+                        # Discard generic localizable verbs/prepositions (e.g. "Pinging", "haciendo")
+                        if name.lower() not in ["pinging", "ping", "a", "für", "pour", "haciendo", "envoi", "requête", "sur"]:
+                            return name
         else:
             output = subprocess.check_output(
                 ["avahi-resolve", "-a", ip_addr],

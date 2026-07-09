@@ -1,7 +1,6 @@
-
 # AQUA_SLOVIC — Cross-Platform Network Security Toolkit
 
-> A powerful network security toolkit inspired by bettercap, with an added **peer-to-peer file transfer** feature. Works on both **Linux** and **Windows**.
+> A powerful network security toolkit inspired by bettercap, focusing on auditing and device discovery. Works on both **Linux** and **Windows**.
 
 **DISCLAIMER**: This tool is for **authorized security testing and network administration only**. Unauthorized use against networks you do not own or have permission to test is **illegal**. You are responsible for your own actions.
 
@@ -17,11 +16,11 @@
 - [Commands Reference](#-commands-reference)
   - [General Commands](#general-commands)
   - [Network Scanner](#-network-scanner-netscan)
+  - [Active Internet Detection](#-active-internet-detection-netinternet)
   - [Packet Sniffer](#-packet-sniffer-netsniff)
   - [ARP Spoofer](#-arp-spoofer-arpspoof)
   - [DNS Spoofer](#-dns-spoofer-dnsspoof)
   - [HTTP Proxy](#-http-proxy-httpproxy)
-  - [File Transfer](#-file-transfer-filesend--filereceive)
 - [Session Variables](#-session-variables)
 - [Examples](#-full-examples)
 - [Troubleshooting](#-troubleshooting)
@@ -34,12 +33,11 @@
 | Feature | Description | Root/Admin? |
 |---|---|---|
 | **Network Scanner** | Discover all devices on your network (IP, MAC, hostname, vendor) | ARP scan: Yes · Ping sweep: No |
+| **Active Internet Detection** | Show internet availability, latency, and connected host counts | No |
 | **Packet Sniffer** | Capture & analyze packets, detect credentials in cleartext protocols | Yes |
 | **ARP Spoofer** | Man-in-the-Middle via ARP cache poisoning (bidirectional) | Yes |
 | **DNS Spoofer** | Intercept DNS queries and inject forged responses | Yes |
 | **HTTP Proxy** | Inspect HTTP traffic, inject JavaScript into pages | No |
-| **File Transfer** | Send any file to any device on the same network | No |
-| **Peer Discovery** | Auto-discover other AQUA_SLOVIC users on the network | No |
 
 ---
 
@@ -70,7 +68,7 @@ sudo python3 main.py
 ```powershell
 # 1. Make sure Python 3 is installed (https://python.org)
 #    Check with:
-python --version
+#    python --version
 
 # 2. Install Npcap (REQUIRED for packet capture)
 #    Download from: https://npcap.com/#download
@@ -98,9 +96,8 @@ Linux:   sudo python3 main.py
 Windows: python main.py        (as Administrator)
 
 # Inside the AQUA_SLOVIC shell:
-aqua_slovic » net.scan                              # Discover all devices
-aqua_slovic » file.receive on                       # Start receiving files
-aqua_slovic » file.send 192.168.1.50 /path/to/file  # Send a file
+aqua_slovic » net.internet                          # Get internet connectivity & local client stats
+aqua_slovic » net.scan                              # Discover all devices on the network you are connected to
 aqua_slovic » help                                  # See all commands
 aqua_slovic » exit                                  # Quit
 ```
@@ -127,7 +124,7 @@ aqua_slovic » exit                                  # Quit
 
 Discover all devices connected to your local network.
 
-#### Commands
+#### Network Scanner Commands
 
 | Command | Description |
 |---|---|
@@ -164,7 +161,7 @@ aqua_slovic » net.scan ping
 
 #### Output Example
 
-```
+```text
 [+] Found 5 device(s):
 
   IP Address       MAC Address         Hostname           Vendor
@@ -178,13 +175,52 @@ aqua_slovic » net.scan ping
 
 ---
 
-###  Packet Sniffer (`net.sniff`)
+### Active Internet Detection (`net.internet`)
+
+Test active internet availability and gauge the client density on your local intranet.
+
+Search can only happen on networks you are currently connected to.
+
+#### Active Internet Detection Commands
+
+| Command        | Description                                                            |
+|----------------|------------------------------------------------------------------------|
+| `net.internet` | Verify internet reachability and count active local network clients. |
+
+#### Usage Examples
+
+```bash
+# Execute active internet checklist & intranet counting
+aqua_slovic » net.internet
+```
+
+#### Network Status Output Example
+
+```text
+[*] Conducting internet connectivity tests...
+[+] Internet Status  : ONLINE (Ping RTT: 28ms)
+[*] Scanning 192.168.1.0/24 to count online network devices...
+[+] Found 4 device(s):
+
+  IP Address       MAC Address         Hostname           Vendor
+  ───────────────  ──────────────────  ─────────────────  ────────
+  192.168.1.1      aa:bb:cc:dd:ee:ff   router.local       TP-Link    (gateway)
+  192.168.1.10     11:22:33:44:55:66   johns-laptop       Intel      (you)
+  192.168.1.15     de:ad:be:ef:00:01   marys-phone        Samsung
+  192.168.1.20     ab:cd:ef:12:34:56   living-room-tv     Apple
+
+[+] Intranet Status  : 4 active device(s) found on 192.168.1.0/24
+```
+
+---
+
+### Packet Sniffer (`net.sniff`)
 
 Capture network packets in real-time with protocol analysis and credential detection.
 
 > **Requires**: root (Linux) or Administrator (Windows)
 
-#### Commands
+#### Packet Sniffer Commands
 
 | Command | Description |
 |---|---|
@@ -245,7 +281,7 @@ Perform ARP cache poisoning to position yourself as a Man-in-the-Middle between 
 > **Requires**: root (Linux) or Administrator (Windows)
 >  **Only use on networks you own or have explicit permission to test!**
 
-#### Commands
+#### ARP Spoofer Commands
 
 | Command | Description |
 |---|---|
@@ -294,7 +330,7 @@ Intercept DNS queries and redirect domains to your chosen IP addresses.
 > **Requires**: root (Linux) or Administrator (Windows)
 > **Best used with**: ARP spoofing active to intercept the target's DNS traffic
 
-#### Commands
+#### DNS Spoofer Commands
 
 | Command | Description |
 |---|---|
@@ -356,7 +392,7 @@ aqua_slovic » arp.spoof off
 
 A transparent HTTP proxy for inspecting and modifying web traffic.
 
-#### Commands
+#### HTTP Proxy Commands
 
 | Command | Description |
 |---|---|
@@ -398,98 +434,6 @@ aqua_slovic » http.proxy off
 
 ---
 
-###  File Transfer (`file.send` / `file.receive`)
-
-**The unique AQUA_SLOVIC feature!** Send any file (documents, images, videos, archives — anything) to any device on the same network.
-
--  No root/admin needed
--  Works on Linux & Windows
--  SHA-256 checksum verification
--  Progress bar with transfer speed
--  Auto-discovery of peers
-
-#### Commands
-
-| Command | Description |
-|---|---|
-| `file.receive on [port]` | Start receiver (default port: 9876) |
-| `file.receive off` | Stop receiver |
-| `file.send <ip> <filepath>` | Send a file to a target IP |
-| `file.discover` | Find other AQUA_SLOVIC peers on the network |
-
-#### How File Transfer Works
-
-1. **Receiver** starts the file server:
-   ```
-   aqua_slovic » file.receive on
-   ```
-2. **Sender** sends a file to the receiver's IP:
-   ```
-   aqua_slovic » file.send 192.168.1.50 /path/to/myfile.pdf
-   ```
-3. The file transfers with a progress bar, speed display, and SHA-256 verification.
-4. Received files are saved to `~/AQUA_SLOVIC_Received/` by default.
-
-#### Linux Examples
-
-```bash
-python3 main.py
-
-# --- On Machine A (receiver) ---
-aqua_slovic » file.receive on
-# [+] File receiver started on 192.168.1.10:9876
-# [*] Files will be saved to: /home/user/AQUA_SLOVIC_Received
-
-# --- On Machine B (sender) ---
-aqua_slovic » file.send 192.168.1.10 /home/user/Documents/report.pdf
-# [*] Sending report.pdf (2.5 MB) to 192.168.1.10...
-# [████████████████████████████████] 100.0%  2.5 MB/2.5 MB  (15.2 MB/s)
-# [+] File sent successfully! (2.5 MB in 0.2s) ✓ verified
-
-# Discover peers
-aqua_slovic » file.discover
-
-# Change save directory
-aqua_slovic » set file.save_dir /tmp/received
-aqua_slovic » file.receive on
-
-# Use a custom port
-aqua_slovic » file.receive on 5555
-aqua_slovic » set file.port 5555
-aqua_slovic » file.send 192.168.1.10 /home/user/video.mp4
-
-# Stop receiver
-aqua_slovic » file.receive off
-```
-
-#### Windows Examples
-
-```powershell
-python main.py
-
-# --- On Machine A (receiver) ---
-aqua_slovic » file.receive on
-# [+] File receiver started on 192.168.1.10:9876
-
-# --- On Machine B (sender) ---
-aqua_slovic » file.send 192.168.1.10 C:\Users\John\Documents\report.pdf
-# [*] Sending report.pdf (2.5 MB) to 192.168.1.10...
-# [████████████████████████████████] 100.0%  2.5 MB/2.5 MB  (15.2 MB/s)
-# [+] File sent successfully! ✓ verified
-
-# Discover peers
-aqua_slovic » file.discover
-
-# Change save directory
-aqua_slovic » set file.save_dir C:\Users\John\Downloads\AQUA_SLOVIC
-aqua_slovic » file.receive on
-
-# Stop
-aqua_slovic » file.receive off
-```
-
----
-
 ##  Session Variables
 
 Use `set` and `get` to configure behavior. Use `env` to see all variables.
@@ -501,13 +445,10 @@ Use `set` and `get` to configure behavior. Use `env` to see all variables.
 | `arp.target` | *(empty)* | Pre-set ARP spoof target IP |
 | `arp.gateway` | auto-detected | Gateway IP for ARP spoofing |
 | `http.proxy.port` | `8080` | HTTP proxy port |
-| `file.port` | `9876` | File transfer port |
-| `file.save_dir` | `~/AQUA_SLOVIC_Received` | Where received files are saved |
 
 ```
-aqua_slovic » set net.subnet 10.0.0.0/24
-aqua_slovic » set file.save_dir /tmp/received
-aqua_slovic » get file.port
+aqua_slovic » set net.subnet 192.168.1.0/24
+aqua_slovic » get net.interface
 aqua_slovic » env
 ```
 
@@ -515,15 +456,14 @@ aqua_slovic » env
 
 ##  Full Examples
 
-### Example 1: Discover Devices and Send a File
+### Example 1: View Active Internet and Scan Connected Network
 
 ```bash
 # Linux
 sudo python3 main.py
 
-aqua_slovic » net.scan                                    # Find all devices
-aqua_slovic » file.receive on                             # Enable receiving
-aqua_slovic » file.send 192.168.1.25 ~/photos/vacation.zip  # Send to a peer
+aqua_slovic » net.internet                             # Check active connection and device count
+aqua_slovic » net.scan                                 # Scan the connected subnet
 ```
 
 ### Example 2: Full MITM Attack (Authorized Testing)
@@ -543,6 +483,7 @@ aqua_slovic » arp.spoof off                            # Step 5: Restore ARP
 ### Example 3: DNS Redirection (Authorized Testing)
 
 ```bash
+# Linux (requires sudo)
 sudo python3 main.py
 
 aqua_slovic » arp.spoof on 192.168.1.50               # MITM the target
@@ -597,21 +538,13 @@ pip install scapy colorama netifaces tqdm
 
 ```
 aqua_slovic » http.proxy on 9090         # Use a different port
-aqua_slovic » file.receive on 5555       # Use a different port
 ```
 
 ### ARP scan returns no results
 
-- Make sure you're on the same network/subnet as the target devices
+- Make sure you're on the same network/subnet as the target devices (Scans are restricted to connected networks)
 - Try `net.scan ping` as a fallback (no root needed)
 - Check your firewall isn't blocking ARP
-
-### File transfer: "Connection refused"
-
-- Make sure the **receiver** started first: `file.receive on`
-- Check that both machines are on the **same network**
-- Check firewall allows port **9876** (or your custom port)
-- On Windows: Allow through Windows Firewall when prompted
 
 ---
 
@@ -633,8 +566,7 @@ slovic/
         ├── sniffer.py             # Packet capture & analysis
         ├── arpspoof.py            # ARP cache poisoning
         ├── dnsspoof.py            # DNS query spoofing
-        ├── httpproxy.py           # HTTP proxy & injection
-        └── filetransfer.py        # File send/receive/discover
+        └── httpproxy.py           # HTTP proxy & injection
 ```
 
 ---
