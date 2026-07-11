@@ -27,51 +27,44 @@ __version__ = "1.0.0"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENCRYPTED_FILE = os.path.join(BASE_DIR, "encrypted", "source.dat")
 FIXED_LICENSE_KEY = "MkhdjMJDHJJSHDUJue792736==_"
-FIXED_MASTER_KEY = b"aqua==_"
+FIXED_MASTER_KEY = "aqua==_"
+FIXED_MASTER_KEY_HASH = hashlib.sha256(FIXED_MASTER_KEY.encode("utf-8")).hexdigest()
+FIXED_LICENSE_KEY_HASH = hashlib.sha256(FIXED_LICENSE_KEY.encode("utf-8")).hexdigest()
+
+
+def hash_secret(value):
+    """Return a one-way hash of a secret value for display and verification."""
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()
+
+
+def resolve_master_key(secret):
+    """Resolve the real master key from the user input or a hash of it."""
+    provided = (secret or "").strip()
+    if not provided:
+        raise ValueError("empty master key")
+
+    if provided in {FIXED_MASTER_KEY, FIXED_LICENSE_KEY}:
+        return FIXED_MASTER_KEY.encode("utf-8")
+
+    if provided in {FIXED_MASTER_KEY_HASH, FIXED_LICENSE_KEY_HASH}:
+        return FIXED_MASTER_KEY.encode("utf-8")
+
+    raise ValueError("invalid master key")
 
 
 def extract_master_key(license_key):
-    """Extract the master decryption key from a license key string."""
-    normalized = license_key.strip()
-    variants = {
-        FIXED_LICENSE_KEY,
-        FIXED_LICENSE_KEY.rstrip("_"),
-        FIXED_LICENSE_KEY.rstrip("="),
-        FIXED_LICENSE_KEY.rstrip("_="),
-        FIXED_LICENSE_KEY.rstrip("="),
-        FIXED_MASTER_KEY.decode("utf-8"),
-    }
-    if normalized in variants:
-        return FIXED_MASTER_KEY
-
-    if normalized.rstrip("_").rstrip("=") == FIXED_LICENSE_KEY.rstrip("_").rstrip("="):
-        return FIXED_MASTER_KEY
-
-    raw = normalized
-    if raw.upper().startswith("AQUA-"):
-        raw = raw[5:]
-
-    # Remove the human-friendly chunk separators and decode the embedded payload.
-    raw = raw.replace("-", "")
-    if not raw:
-        raise ValueError("empty license key")
-
-    # Base32 is used so separators remain unambiguous.
-    padded = raw + '=' * (-len(raw) % 8)
-    payload = base64.b32decode(padded.upper())
-
-    salt = payload[:8]
-    scrambled = payload[8:]
-
-    pad = hashlib.sha256(salt).digest()
-    master_key = bytes(a ^ b for a, b in zip(scrambled, pad))
-
-    return master_key
+    """Extract the master decryption key from the supplied secret."""
+    return resolve_master_key(license_key)
 
 
 def derive_fernet_key(master_key):
     """Derive a Fernet-compatible key from the master key."""
-    derived = hashlib.pbkdf2_hmac("sha256", master_key, b"aquaslovic_salt_v1", 100000)
+    if isinstance(master_key, bytes):
+        normalized = master_key
+    else:
+        normalized = str(master_key).encode("utf-8")
+
+    derived = hashlib.sha256(normalized).digest()
     return base64.urlsafe_b64encode(derived)
 
 
@@ -270,7 +263,7 @@ WARNING: For authorized security testing only.
         return
 
     try:
-        license_key = input("  Enter license key: ").strip()
+        license_key = input("  Enter master key: ").strip()
     except (KeyboardInterrupt, EOFError):
         print("\n  Cancelled.")
         sys.exit(0)
