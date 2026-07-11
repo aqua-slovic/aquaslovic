@@ -1,5 +1,5 @@
 """
-AQUA_SLOVIC — Interactive CLI Shell
+AQUA_SLOVIC - Interactive CLI Shell
 Bettercap-style command interface for all modules.
 """
 
@@ -13,7 +13,7 @@ except ImportError:
     try:
         import pyreadline3 as readline  # Windows fallback
     except ImportError:
-        pass  # No readline support — input() still works fine
+        pass  # No readline support - input() still works fine
 
 from colorama import Fore, Style, init
 
@@ -134,7 +134,7 @@ class AquaSlovicCLI:
         print(f"  {Fore.WHITE}Admin/Root   :{Style.RESET_ALL} {is_admin}")
         print()
 
-    # ── Help ────────────────────────────────────────────────────────────
+    # -- Help ------------------------------------------------------------
 
     def _cmd_help(self, args):
         """Show help for all commands or a specific module."""
@@ -143,7 +143,7 @@ class AquaSlovicCLI:
             self._module_help(module)
             return
 
-        print(f"\n  {Fore.CYAN}━━━ AQUA_SLOVIC Commands ━━━{Style.RESET_ALL}\n")
+        print(f"\n  {Fore.CYAN}--- AQUA_SLOVIC Commands ---{Style.RESET_ALL}\n")
 
         sections = [
             ("General", [
@@ -193,7 +193,7 @@ class AquaSlovicCLI:
         """Show detailed help for a specific module."""
         helps = {
             "net.scan": """
-  net.scan — Network Discovery Module
+  net.scan - Network Discovery Module
 
   Discovers all devices on your local network.
   Search can only happen on networks you are connected to.
@@ -208,7 +208,7 @@ class AquaSlovicCLI:
     set net.interface <if>  Set the network interface
 """,
             "net.internet": """
-  net.internet — Active Internet & Client Detection Module
+  net.internet - Active Internet & Client Detection Module
 
   Retrieves host internet status and analyzes local network device population.
 
@@ -216,7 +216,7 @@ class AquaSlovicCLI:
     net.internet       Performs connectivity tests and counts local clients
 """,
             "net.sniff": """
-  net.sniff — Packet Sniffer Module
+  net.sniff - Packet Sniffer Module
 
   Captures and analyzes network packets in real-time.
   Requires root/admin privileges.
@@ -235,10 +235,10 @@ class AquaSlovicCLI:
     tcp port 21        FTP traffic
 """,
             "arp.spoof": """
-  arp.spoof — ARP Spoofing Module
+  arp.spoof - ARP Spoofing Module
 
   Performs ARP cache poisoning for Man-in-the-Middle positioning.
-  ⚠ For authorized security testing only!
+  ! For authorized security testing only!
   Requires root/admin privileges.
 
   Commands:
@@ -250,10 +250,10 @@ class AquaSlovicCLI:
     set arp.target <ip>    Pre-set target IP
 """,
             "dns.spoof": """
-  dns.spoof — DNS Spoofing Module
+  dns.spoof - DNS Spoofing Module
 
   Intercepts DNS queries and sends forged responses.
-  ⚠ For authorized security testing only!
+  ! For authorized security testing only!
   Requires root/admin & typically used with ARP spoofing.
 
   Commands:
@@ -266,7 +266,7 @@ class AquaSlovicCLI:
     dns.spoof off                  Stop DNS spoofing
 """,
             "http.proxy": """
-  http.proxy — HTTP Proxy Module
+  http.proxy - HTTP Proxy Module
 
   Transparent HTTP proxy for traffic inspection and injection.
   Configure the target's browser to use this as a proxy.
@@ -287,7 +287,7 @@ class AquaSlovicCLI:
         else:
             print_warning(f"No detailed help for '{module}'. Try: help")
 
-    # ── Session Variables ───────────────────────────────────────────────
+    # -- Session Variables -----------------------------------------------
 
     def _cmd_set(self, args):
         """Set a session variable."""
@@ -309,7 +309,7 @@ class AquaSlovicCLI:
             print_warning(f"Setting new session variable: {var}")
 
         self.variables[var] = val
-        print_success(f"{var} → {Fore.WHITE}{val}{Style.RESET_ALL}")
+        print_success(f"{var} -> {Fore.WHITE}{val}{Style.RESET_ALL}")
 
     def _cmd_get(self, args):
         """Get a session variable."""
@@ -330,7 +330,7 @@ class AquaSlovicCLI:
             print(f"  {Fore.WHITE}{var:<25}{Style.RESET_ALL} {val}")
         print()
 
-    # ── Network Scanner ─────────────────────────────────────────────────
+    # -- Network Scanner -------------------------------------------------
 
     def _cmd_net_scan(self, args):
         """Execute a network scan."""
@@ -345,7 +345,7 @@ class AquaSlovicCLI:
                 subnet = None
             self.scanner.arp_scan(subnet)
 
-    # ── Active Internet & Client Detection ──────────────────────────────
+    # -- Active Internet & Client Detection ------------------------------
 
     def _cmd_net_internet(self, args):
         """Execute active internet testing and client scanning."""
@@ -388,7 +388,7 @@ class AquaSlovicCLI:
         except Exception as e:
             print_error(f"Failed to scan local network: {e}")
 
-    # ── Packet Sniffer ──────────────────────────────────────────────────
+    # -- Packet Sniffer --------------------------------------------------
 
     def _cmd_net_sniff(self, args):
         """Start or stop packet sniffing."""
@@ -410,7 +410,7 @@ class AquaSlovicCLI:
         else:
             print_error("Usage: net.sniff on [filter] | net.sniff off")
 
-    # ── ARP Spoofer ─────────────────────────────────────────────────────
+    # -- ARP Spoofer -----------------------------------------------------
 
     def _cmd_arp_spoof(self, args):
         """Start or stop ARP spoofing."""
@@ -426,14 +426,17 @@ class AquaSlovicCLI:
                 print_error("Specify target: arp.spoof on <target_ip>")
                 return
             gateway = self.variables.get("arp.gateway") or None
-            self.arp_spoofer.start(target, gateway)
+            iface = self.variables.get("net.interface")
+            if iface == "auto":
+                iface = None
+            self.arp_spoofer.start(target, gateway, iface=iface)
 
         elif action == "off":
             self.arp_spoofer.stop()
         else:
             print_error("Usage: arp.spoof on <target_ip> | arp.spoof off")
 
-    # ── DNS Spoofer ─────────────────────────────────────────────────────
+    # -- DNS Spoofer -----------------------------------------------------
 
     def _cmd_dns_spoof(self, args):
         """DNS spoofing commands."""
@@ -460,13 +463,16 @@ class AquaSlovicCLI:
                 print_error("Usage: dns.spoof all <ip>")
                 return
             self.dns_spoofer.spoof_all = args[1]
-            print_success(f"ALL DNS queries → {Fore.RED}{args[1]}{Style.RESET_ALL}")
+            print_success(f"ALL DNS queries -> {Fore.RED}{args[1]}{Style.RESET_ALL}")
 
         elif action == "list":
             self.dns_spoofer.list_records()
 
         elif action == "on":
-            self.dns_spoofer.start()
+            iface = self.variables.get("net.interface")
+            if iface == "auto":
+                iface = None
+            self.dns_spoofer.start(iface=iface)
 
         elif action == "off":
             self.dns_spoofer.stop()
@@ -474,7 +480,7 @@ class AquaSlovicCLI:
         else:
             print_error("Usage: dns.spoof add|remove|all|list|on|off")
 
-    # ── HTTP Proxy ──────────────────────────────────────────────────────
+    # -- HTTP Proxy ------------------------------------------------------
 
     def _cmd_http_proxy(self, args):
         """HTTP proxy commands."""
@@ -504,7 +510,7 @@ class AquaSlovicCLI:
         else:
             print_error("Usage: http.proxy on [port] | off | inject <js>")
 
-    # ── General ─────────────────────────────────────────────────────────
+    # -- General ---------------------------------------------------------
 
     def _cmd_clear(self, args):
         """Clear the screen."""

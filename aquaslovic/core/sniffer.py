@@ -1,5 +1,5 @@
 """
-AQUA_SLOVIC — Packet Sniffer Module
+AQUA_SLOVIC - Packet Sniffer Module
 Capture and analyze network packets in real-time with protocol analysis
 and credential detection.
 """
@@ -83,13 +83,18 @@ class PacketSniffer:
             if iface:
                 conf.iface = iface
 
-            scapy_sniff(
-                prn=self._process_packet,
-                filter=bpf_filter if bpf_filter else None,
-                store=False,
-                stop_filter=lambda p: not self.running,
-                iface=iface,
-            )
+            # Use a loop with short timeouts instead of one blocking call.
+            # This ensures we check self.running every ~1 second, so
+            # start/stop is responsive even when there's low traffic.
+            while self.running:
+                scapy_sniff(
+                    prn=self._process_packet,
+                    filter=bpf_filter if bpf_filter else None,
+                    store=False,
+                    stop_filter=lambda p: not self.running,
+                    timeout=1,
+                    iface=iface,
+                )
         except Exception as e:
             if self.running:
                 print_error(f"Sniffer error: {e}")

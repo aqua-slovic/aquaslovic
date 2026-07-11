@@ -1,5 +1,5 @@
 """
-AQUA_SLOVIC — Network Scanner Module
+AQUA_SLOVIC - Network Scanner Module
 Discover all devices on the local network using ARP scan or ping sweep.
 """
 

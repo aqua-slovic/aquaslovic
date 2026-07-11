@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="aquaslovic",
     version="1.0.0",
-    description="AQUA_SLOVIC — Cross-Platform Network Security Toolkit",
+    description="AQUA_SLOVIC - Cross-Platform Network Security Toolkit",
     author="AquaSlovic",
     packages=find_packages(),
     install_requires=[

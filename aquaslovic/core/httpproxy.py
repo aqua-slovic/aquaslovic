@@ -1,5 +1,5 @@
 """
-AQUA_SLOVIC — HTTP Proxy Module
+AQUA_SLOVIC - HTTP Proxy Module
 Transparent HTTP proxy for inspecting and modifying web traffic.
 """
 
@@ -315,7 +315,7 @@ class HTTPProxy:
 
                 return host, port, path
             else:
-                # Relative URL — get host from Host header
+                # Relative URL - get host from Host header
                 host = None
                 for line in request.split(b"\r\n"):
                     if line.lower().startswith(b"host:"):

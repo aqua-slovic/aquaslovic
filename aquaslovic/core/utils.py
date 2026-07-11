@@ -13,8 +13,6 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-# ── Banner ──────────────────────────────────────────────────────────────────
-
 BANNER = rf"""
 {Fore.CYAN}
     /   |   ____    __  __     /   |            _____    __       ____   _    __     ____    ______
@@ -24,9 +22,10 @@ BANNER = rf"""
                                      /_____/ /____/   /____/            |___/    /___/    \____/   
 {Style.RESET_ALL}
 {Fore.WHITE}  AquaSlovic v1.0.0 - Network Security Toolkit{Style.RESET_ALL}
-{Fore.YELLOW}  For authorized security testing only{Style.RESET_ALL}
-{Fore.GREEN}  Auto-receive enabled - send files without receiver setup{Style.RESET_ALL}
-{Fore.CYAN}  For more information visit wisdom-malata.vercel.app{Style.RESET_ALL}
+{Fore.YELLOW}  For authorized security testing{Style.RESET_ALL}
+{Fore.CYAN}  for more visit github = https://github.com/aqua-slovic{Style.RESET_ALL}
+{Fore.CYAN}  telegram = https://t.me/aqua_slovic{Style.RESET_ALL}
+{Fore.CYAN}  portfolio = https://wisdom-malata.vercel.app{Style.RESET_ALL}
 """
 
 
@@ -66,7 +65,7 @@ def print_table(headers, rows):
         f"{Fore.CYAN}{h:<{col_widths[i]}}{Style.RESET_ALL}"
         for i, h in enumerate(headers)
     )
-    separator = "  ".join("─" * w for w in col_widths)
+    separator = "  ".join("-" * w for w in col_widths)
 
     print(f"\n  {header_line}")
     print(f"  {separator}")
@@ -76,7 +75,7 @@ def print_table(headers, rows):
     print()
 
 
-# ── Platform Detection ──────────────────────────────────────────────────────
+# -- Platform Detection ------------------------------------------------------
 
 def is_windows():
     return platform.system().lower() == "windows"
@@ -103,14 +102,14 @@ def require_root():
     if not is_root():
         print_error("This module requires root/administrator privileges.")
         if is_windows():
-            print_info("Right-click Command Prompt → 'Run as administrator'")
+            print_info("Right-click Command Prompt -> 'Run as administrator'")
         else:
             print_info("Run with: sudo python main.py")
         return False
     return True
 
 
-# ── Network Utilities ───────────────────────────────────────────────────────
+# -- Network Utilities -------------------------------------------------------
 
 def get_default_interface():
     """Get the default network interface name."""
@@ -284,13 +283,14 @@ def get_subnet():
     return f"{'.'.join(parts)}/24"
 
 
-def get_mac(ip_addr):
+def get_mac(ip_addr, iface=None):
     """Get MAC address for a given IP using ARP."""
     try:
-        from scapy.all import ARP, Ether, srp
+        from scapy.all import ARP, Ether, srp, conf
+        send_iface = iface or conf.iface
         ans, _ = srp(
             Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=ip_addr),
-            timeout=2, verbose=False
+            timeout=3, verbose=False, iface=send_iface
         )
         if ans:
             return ans[0][1].hwsrc
@@ -430,13 +430,22 @@ def enable_ip_forwarding():
                 f.write("1")
             print_success("IP forwarding enabled (Linux)")
         elif is_windows():
-            subprocess.run(
-                ["reg", "add",
-                 r"HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
-                 "/v", "IPEnableRouter", "/t", "REG_DWORD", "/d", "1", "/f"],
-                capture_output=True
+            # Use netsh for immediate effect (no reboot needed)
+            result = subprocess.run(
+                ["netsh", "interface", "ipv4", "set", "global", "forwarding=enabled"],
+                capture_output=True, text=True
             )
-            print_success("IP forwarding enabled (Windows — may require restart)")
+            if result.returncode == 0:
+                print_success("IP forwarding enabled (Windows)")
+            else:
+                # Fallback to registry method
+                subprocess.run(
+                    ["reg", "add",
+                     r"HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
+                     "/v", "IPEnableRouter", "/t", "REG_DWORD", "/d", "1", "/f"],
+                    capture_output=True
+                )
+                print_success("IP forwarding enabled via registry (Windows -- may need restart)")
     except Exception as e:
         print_error(f"Failed to enable IP forwarding: {e}")
 
@@ -449,18 +458,25 @@ def disable_ip_forwarding():
                 f.write("0")
             print_info("IP forwarding disabled (Linux)")
         elif is_windows():
-            subprocess.run(
-                ["reg", "add",
-                 r"HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
-                 "/v", "IPEnableRouter", "/t", "REG_DWORD", "/d", "0", "/f"],
-                capture_output=True
+            result = subprocess.run(
+                ["netsh", "interface", "ipv4", "set", "global", "forwarding=disabled"],
+                capture_output=True, text=True
             )
-            print_info("IP forwarding disabled (Windows)")
+            if result.returncode == 0:
+                print_info("IP forwarding disabled (Windows)")
+            else:
+                subprocess.run(
+                    ["reg", "add",
+                     r"HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters",
+                     "/v", "IPEnableRouter", "/t", "REG_DWORD", "/d", "0", "/f"],
+                    capture_output=True
+                )
+                print_info("IP forwarding disabled via registry (Windows)")
     except Exception as e:
         print_error(f"Failed to disable IP forwarding: {e}")
 
 
-# ── OUI Vendor Lookup ───────────────────────────────────────────────────────
+# -- OUI Vendor Lookup -------------------------------------------------------
 
 # Small built-in OUI table for common vendors
 OUI_TABLE = {

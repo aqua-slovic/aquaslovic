@@ -1,4 +1,4 @@
-# AQUA_SLOVIC — Cross-Platform Network Security Toolkit
+# AQUA_SLOVIC - Cross-Platform Network Security Toolkit
 
 > A powerful network security toolkit inspired by bettercap, focusing on auditing and device discovery. Works on both **Linux** and **Windows**.
 
@@ -28,11 +28,11 @@
 
 ---
 
-## ✨ Features
+## * Features
 
 | Feature | Description | Root/Admin? |
 |---|---|---|
-| **Network Scanner** | Discover all devices on your network (IP, MAC, hostname, vendor) | ARP scan: Yes · Ping sweep: No |
+| **Network Scanner** | Discover all devices on your network (IP, MAC, hostname, vendor) | ARP scan: Yes - Ping sweep: No |
 | **Active Internet Detection** | Show internet availability, latency, and connected host counts | No |
 | **Packet Sniffer** | Capture & analyze packets, detect credentials in cleartext protocols | Yes |
 | **ARP Spoofer** | Man-in-the-Middle via ARP cache poisoning (bidirectional) | Yes |
@@ -84,11 +84,11 @@ pip install -r requirements.txt
 python main.py
 ```
 
-> **Windows Users**: Right-click Command Prompt or PowerShell → **"Run as administrator"** to enable all features.
+> **Windows Users**: Right-click Command Prompt or PowerShell -> **"Run as administrator"** to enable all features.
 
 ---
 
-## 🚀 Quick Start
+## > Quick Start
 
 ```
 # Launch the tool
@@ -96,10 +96,10 @@ Linux:   sudo python3 main.py
 Windows: python main.py        (as Administrator)
 
 # Inside the AQUA_SLOVIC shell:
-aqua_slovic » net.internet                          # Get internet connectivity & local client stats
-aqua_slovic » net.scan                              # Discover all devices on the network you are connected to
-aqua_slovic » help                                  # See all commands
-aqua_slovic » exit                                  # Quit
+aqua_slovic > net.internet                          # Get internet connectivity & local client stats
+aqua_slovic > net.scan                              # Discover all devices on the network you are connected to
+aqua_slovic > help                                  # See all commands
+aqua_slovic > exit                                  # Quit
 ```
 
 ---
@@ -137,14 +137,14 @@ Discover all devices connected to your local network.
 ```bash
 # Full ARP scan (requires sudo)
 sudo python3 main.py
-aqua_slovic » net.scan
+aqua_slovic > net.scan
 
 # Ping sweep (no sudo needed)
 python3 main.py
-aqua_slovic » net.scan ping
+aqua_slovic > net.scan ping
 
 # Scan specific subnet
-aqua_slovic » net.scan 10.0.0.0/24
+aqua_slovic > net.scan 10.0.0.0/24
 ```
 
 #### Windows Examples
@@ -152,11 +152,11 @@ aqua_slovic » net.scan 10.0.0.0/24
 ```powershell
 # Run CMD as Administrator, then:
 python main.py
-aqua_slovic » net.scan
+aqua_slovic > net.scan
 
 # Without admin (ping sweep only)
 python main.py
-aqua_slovic » net.scan ping
+aqua_slovic > net.scan ping
 ```
 
 #### Output Example
@@ -165,7 +165,7 @@ aqua_slovic » net.scan ping
 [+] Found 5 device(s):
 
   IP Address       MAC Address         Hostname           Vendor
-  ───────────────  ──────────────────  ─────────────────  ────────
+  ---------------  ------------------  -----------------  --------
   192.168.1.1      aa:bb:cc:dd:ee:ff   router.local       TP-Link    (gateway)
   192.168.1.10     11:22:33:44:55:66   johns-laptop       Intel      (you)
   192.168.1.15     de:ad:be:ef:00:01   marys-phone        Samsung
@@ -191,7 +191,7 @@ Search can only happen on networks you are currently connected to.
 
 ```bash
 # Execute active internet checklist & intranet counting
-aqua_slovic » net.internet
+aqua_slovic > net.internet
 ```
 
 #### Network Status Output Example
@@ -203,7 +203,7 @@ aqua_slovic » net.internet
 [+] Found 4 device(s):
 
   IP Address       MAC Address         Hostname           Vendor
-  ───────────────  ──────────────────  ─────────────────  ────────
+  ---------------  ------------------  -----------------  --------
   192.168.1.1      aa:bb:cc:dd:ee:ff   router.local       TP-Link    (gateway)
   192.168.1.10     11:22:33:44:55:66   johns-laptop       Intel      (you)
   192.168.1.15     de:ad:be:ef:00:01   marys-phone        Samsung
@@ -246,19 +246,19 @@ Capture network packets in real-time with protocol analysis and credential detec
 sudo python3 main.py
 
 # Capture all traffic
-aqua_slovic » net.sniff on
+aqua_slovic > net.sniff on
 
 # Capture only HTTP
-aqua_slovic » net.sniff on tcp port 80
+aqua_slovic > net.sniff on tcp port 80
 
 # Capture DNS queries
-aqua_slovic » net.sniff on udp port 53
+aqua_slovic > net.sniff on udp port 53
 
 # Monitor a specific host
-aqua_slovic » net.sniff on host 192.168.1.50
+aqua_slovic > net.sniff on host 192.168.1.50
 
 # Stop
-aqua_slovic » net.sniff off
+aqua_slovic > net.sniff off
 ```
 
 #### Windows Examples
@@ -267,14 +267,14 @@ aqua_slovic » net.sniff off
 # Run as Administrator
 python main.py
 
-aqua_slovic » net.sniff on
-aqua_slovic » net.sniff on tcp port 80
-aqua_slovic » net.sniff off
+aqua_slovic > net.sniff on
+aqua_slovic > net.sniff on tcp port 80
+aqua_slovic > net.sniff off
 ```
 
 ---
 
-### ☠️ ARP Spoofer (`arp.spoof`)
+### ! ARP Spoofer (`arp.spoof`)
 
 Perform ARP cache poisoning to position yourself as a Man-in-the-Middle between a target and the gateway.
 
@@ -301,14 +301,14 @@ Perform ARP cache poisoning to position yourself as a Man-in-the-Middle between 
 sudo python3 main.py
 
 # Spoof a target (gateway auto-detected)
-aqua_slovic » arp.spoof on 192.168.1.50
+aqua_slovic > arp.spoof on 192.168.1.50
 
 # Specify a custom gateway
-aqua_slovic » set arp.gateway 192.168.1.254
-aqua_slovic » arp.spoof on 192.168.1.50
+aqua_slovic > set arp.gateway 192.168.1.254
+aqua_slovic > arp.spoof on 192.168.1.50
 
 # Stop and restore
-aqua_slovic » arp.spoof off
+aqua_slovic > arp.spoof off
 ```
 
 #### Windows Examples
@@ -317,8 +317,8 @@ aqua_slovic » arp.spoof off
 # Run as Administrator
 python main.py
 
-aqua_slovic » arp.spoof on 192.168.1.50
-aqua_slovic » arp.spoof off
+aqua_slovic > arp.spoof on 192.168.1.50
+aqua_slovic > arp.spoof off
 ```
 
 ---
@@ -348,20 +348,20 @@ Intercept DNS queries and redirect domains to your chosen IP addresses.
 sudo python3 main.py
 
 # Redirect a specific domain
-aqua_slovic » dns.spoof add example.com 192.168.1.10
-aqua_slovic » dns.spoof on
+aqua_slovic > dns.spoof add example.com 192.168.1.10
+aqua_slovic > dns.spoof on
 
 # Redirect all subdomains of a domain
-aqua_slovic » dns.spoof add *.google.com 192.168.1.10
-aqua_slovic » dns.spoof on
+aqua_slovic > dns.spoof add *.google.com 192.168.1.10
+aqua_slovic > dns.spoof on
 
 # Redirect ALL DNS queries (captive portal style)
-aqua_slovic » dns.spoof all 192.168.1.10
-aqua_slovic » dns.spoof on
+aqua_slovic > dns.spoof all 192.168.1.10
+aqua_slovic > dns.spoof on
 
 # Check rules and stop
-aqua_slovic » dns.spoof list
-aqua_slovic » dns.spoof off
+aqua_slovic > dns.spoof list
+aqua_slovic > dns.spoof off
 ```
 
 #### Windows Examples
@@ -370,20 +370,20 @@ aqua_slovic » dns.spoof off
 # Run as Administrator
 python main.py
 
-aqua_slovic » dns.spoof add example.com 10.0.0.5
-aqua_slovic » dns.spoof on
-aqua_slovic » dns.spoof off
+aqua_slovic > dns.spoof add example.com 10.0.0.5
+aqua_slovic > dns.spoof on
+aqua_slovic > dns.spoof off
 ```
 
 #### Typical MITM Workflow (DNS + ARP)
 
 ```
-aqua_slovic » arp.spoof on 192.168.1.50              # MITM the target
-aqua_slovic » dns.spoof add login.example.com 192.168.1.10  # Redirect their login
-aqua_slovic » dns.spoof on
+aqua_slovic > arp.spoof on 192.168.1.50              # MITM the target
+aqua_slovic > dns.spoof add login.example.com 192.168.1.10  # Redirect their login
+aqua_slovic > dns.spoof on
 # ... wait for target to visit login.example.com ...
-aqua_slovic » dns.spoof off
-aqua_slovic » arp.spoof off
+aqua_slovic > dns.spoof off
+aqua_slovic > arp.spoof off
 ```
 
 ---
@@ -407,16 +407,16 @@ A transparent HTTP proxy for inspecting and modifying web traffic.
 python3 main.py
 
 # Start on default port
-aqua_slovic » http.proxy on
+aqua_slovic > http.proxy on
 
 # Start on custom port
-aqua_slovic » http.proxy on 9090
+aqua_slovic > http.proxy on 9090
 
 # Inject an alert into every page
-aqua_slovic » http.proxy inject alert('Injected by AQUA_SLOVIC')
+aqua_slovic > http.proxy inject alert('Injected by AQUA_SLOVIC')
 
 # Stop
-aqua_slovic » http.proxy off
+aqua_slovic > http.proxy off
 ```
 
 #### Windows Examples
@@ -424,10 +424,10 @@ aqua_slovic » http.proxy off
 ```powershell
 python main.py
 
-aqua_slovic » http.proxy on 8080
-aqua_slovic » http.proxy inject alert('Hello from AQUA_SLOVIC')
-aqua_slovic » http.proxy inject off
-aqua_slovic » http.proxy off
+aqua_slovic > http.proxy on 8080
+aqua_slovic > http.proxy inject alert('Hello from AQUA_SLOVIC')
+aqua_slovic > http.proxy inject off
+aqua_slovic > http.proxy off
 ```
 
 > **Usage**: Configure the target browser's proxy settings to `http://<your-ip>:8080` to route traffic through AQUA_SLOVIC.
@@ -447,9 +447,9 @@ Use `set` and `get` to configure behavior. Use `env` to see all variables.
 | `http.proxy.port` | `8080` | HTTP proxy port |
 
 ```
-aqua_slovic » set net.subnet 192.168.1.0/24
-aqua_slovic » get net.interface
-aqua_slovic » env
+aqua_slovic > set net.subnet 192.168.1.0/24
+aqua_slovic > get net.interface
+aqua_slovic > env
 ```
 
 ---
@@ -462,8 +462,8 @@ aqua_slovic » env
 # Linux
 sudo python3 main.py
 
-aqua_slovic » net.internet                             # Check active connection and device count
-aqua_slovic » net.scan                                 # Scan the connected subnet
+aqua_slovic > net.internet                             # Check active connection and device count
+aqua_slovic > net.scan                                 # Scan the connected subnet
 ```
 
 ### Example 2: Full MITM Attack (Authorized Testing)
@@ -472,12 +472,12 @@ aqua_slovic » net.scan                                 # Scan the connected sub
 # Linux (requires sudo)
 sudo python3 main.py
 
-aqua_slovic » net.scan                                # Step 1: Find devices
-aqua_slovic » arp.spoof on 192.168.1.50               # Step 2: MITM target
-aqua_slovic » net.sniff on tcp port 80                 # Step 3: Sniff HTTP
+aqua_slovic > net.scan                                # Step 1: Find devices
+aqua_slovic > arp.spoof on 192.168.1.50               # Step 2: MITM target
+aqua_slovic > net.sniff on tcp port 80                 # Step 3: Sniff HTTP
 # ... observe traffic ...
-aqua_slovic » net.sniff off                            # Step 4: Stop sniffing
-aqua_slovic » arp.spoof off                            # Step 5: Restore ARP
+aqua_slovic > net.sniff off                            # Step 4: Stop sniffing
+aqua_slovic > arp.spoof off                            # Step 5: Restore ARP
 ```
 
 ### Example 3: DNS Redirection (Authorized Testing)
@@ -486,12 +486,12 @@ aqua_slovic » arp.spoof off                            # Step 5: Restore ARP
 # Linux (requires sudo)
 sudo python3 main.py
 
-aqua_slovic » arp.spoof on 192.168.1.50               # MITM the target
-aqua_slovic » dns.spoof add evil-site.com 192.168.1.10 # Redirect domain
-aqua_slovic » dns.spoof on                             # Start DNS spoofing
+aqua_slovic > arp.spoof on 192.168.1.50               # MITM the target
+aqua_slovic > dns.spoof add evil-site.com 192.168.1.10 # Redirect domain
+aqua_slovic > dns.spoof on                             # Start DNS spoofing
 # ... target visits evil-site.com and goes to 192.168.1.10 ...
-aqua_slovic » dns.spoof off
-aqua_slovic » arp.spoof off
+aqua_slovic > dns.spoof off
+aqua_slovic > arp.spoof off
 ```
 
 ### Example 4: HTTP Proxy with JS Injection
@@ -499,12 +499,12 @@ aqua_slovic » arp.spoof off
 ```bash
 python3 main.py
 
-aqua_slovic » http.proxy on 8080
-aqua_slovic » http.proxy inject document.title='Hacked by AQUA_SLOVIC'
-# Configure target browser proxy → your-ip:8080
+aqua_slovic > http.proxy on 8080
+aqua_slovic > http.proxy inject document.title='Hacked by AQUA_SLOVIC'
+# Configure target browser proxy -> your-ip:8080
 # Every page they visit will have modified title
-aqua_slovic » http.proxy inject off
-aqua_slovic » http.proxy off
+aqua_slovic > http.proxy inject off
+aqua_slovic > http.proxy off
 ```
 
 ---
@@ -516,7 +516,7 @@ aqua_slovic » http.proxy off
 | OS | Solution |
 |---|---|
 | Linux | Run with `sudo`: `sudo python3 main.py` |
-| Windows | Right-click CMD/PowerShell → **"Run as administrator"** |
+| Windows | Right-click CMD/PowerShell -> **"Run as administrator"** |
 
 ### "Scapy not available" / Import errors
 
@@ -537,7 +537,7 @@ pip install scapy colorama netifaces tqdm
 ### "Address already in use" (port conflict)
 
 ```
-aqua_slovic » http.proxy on 9090         # Use a different port
+aqua_slovic > http.proxy on 9090         # Use a different port
 ```
 
 ### ARP scan returns no results
@@ -552,21 +552,21 @@ aqua_slovic » http.proxy on 9090         # Use a different port
 
 ```
 slovic/
-├── main.py                        # Entry point
-├── setup.py                       # Package installer
-├── requirements.txt               # Python dependencies
-├── README.md                      # This file
-└── aquaslovic/
-    ├── __init__.py
-    ├── cli.py                     # Interactive shell
-    └── core/
-        ├── __init__.py
-        ├── utils.py               # Cross-platform utilities
-        ├── scanner.py             # Network device discovery
-        ├── sniffer.py             # Packet capture & analysis
-        ├── arpspoof.py            # ARP cache poisoning
-        ├── dnsspoof.py            # DNS query spoofing
-        └── httpproxy.py           # HTTP proxy & injection
+├-- main.py                        # Entry point
+├-- setup.py                       # Package installer
+├-- requirements.txt               # Python dependencies
+├-- README.md                      # This file
+└-- aquaslovic/
+    ├-- __init__.py
+    ├-- cli.py                     # Interactive shell
+    └-- core/
+        ├-- __init__.py
+        ├-- utils.py               # Cross-platform utilities
+        ├-- scanner.py             # Network device discovery
+        ├-- sniffer.py             # Packet capture & analysis
+        ├-- arpspoof.py            # ARP cache poisoning
+        ├-- dnsspoof.py            # DNS query spoofing
+        └-- httpproxy.py           # HTTP proxy & injection
 ```
 
 ---

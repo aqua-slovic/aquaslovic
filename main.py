@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AQUA_SLOVIC — Cross-Platform Network Security Toolkit
+AQUA_SLOVIC - Cross-Platform Network Security Toolkit
 Main entry point.
 
 Usage:
@@ -23,7 +23,7 @@ from aquaslovic.core.utils import print_banner, print_warning
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AQUA_SLOVIC — Cross-Platform Network Security Toolkit",
+        description="AQUA_SLOVIC - Cross-Platform Network Security Toolkit",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -45,9 +45,9 @@ WARNING: For authorized security testing only.
     # Legal disclaimer
     print_warning("=" * 60)
     print_warning("  AQUA_SLOVIC - LEGAL DISCLAIMER")
-    print_warning("  This tool is for AUTHORIZED security testing only.")
-    print_warning("  Unauthorized access to computer networks is illegal.")
+    print_warning("  This tool is for AUTHORIZED security testing.")
     print_warning("  You are responsible for your own actions.")
+    print_warning("  Test on your own network and devices.")
     print_warning("=" * 60)
     print()
 
