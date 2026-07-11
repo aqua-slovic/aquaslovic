@@ -104,7 +104,7 @@ def require_root():
         if is_windows():
             print_info("Right-click Command Prompt -> 'Run as administrator'")
         else:
-            print_info("Run with: sudo python main.py")
+            print_info("Run with: sudo python slovic.py")
         return False
     return True
 

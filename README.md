@@ -1,5 +1,7 @@
 # AQUA_SLOVIC - Cross-Platform Network Security Toolkit
 
+This project uses an encrypted bootstrap so the source is not exposed in the repository. Run the key generator locally, then start the launcher with a license key.
+
 > A powerful network security toolkit inspired by bettercap, focusing on auditing and device discovery. Works on both **Linux** and **Windows**.
 
 **DISCLAIMER**: This tool is for **authorized security testing and network administration only**. Unauthorized use against networks you do not own or have permission to test is **illegal**. You are responsible for your own actions.
@@ -59,8 +61,11 @@ pip3 install -r requirements.txt
 # 4. (Optional) Install as a package
 pip3 install -e .
 
-# 5. Launch AQUA_SLOVIC (use sudo for full features)
-sudo python3 main.py
+# 5. Generate a local license key (kept on your machine only)
+python3 key_generator.py
+
+# 6. Launch AQUA_SLOVIC (use sudo for full features)
+sudo python3 slovic.py
 ```
 
 ### Windows
@@ -80,8 +85,11 @@ cd C:\path\to\slovic
 # 4. Install dependencies
 pip install -r requirements.txt
 
-# 5. Launch AQUA_SLOVIC (run CMD/PowerShell as Administrator for full features)
-python main.py
+# 5. Generate a local license key (kept on your machine only)
+python key_generator.py
+
+# 6. Launch AQUA_SLOVIC (run CMD/PowerShell as Administrator for full features)
+python slovic.py
 ```
 
 > **Windows Users**: Right-click Command Prompt or PowerShell -> **"Run as administrator"** to enable all features.
@@ -92,8 +100,8 @@ python main.py
 
 ```
 # Launch the tool
-Linux:   sudo python3 main.py
-Windows: python main.py        (as Administrator)
+Linux:   sudo python3 slovic.py
+Windows: python slovic.py        (as Administrator)
 
 # Inside the AQUA_SLOVIC shell:
 aqua_slovic > net.internet                          # Get internet connectivity & local client stats
@@ -136,11 +144,11 @@ Discover all devices connected to your local network.
 
 ```bash
 # Full ARP scan (requires sudo)
-sudo python3 main.py
+sudo python3 slovic.py
 aqua_slovic > net.scan
 
 # Ping sweep (no sudo needed)
-python3 main.py
+python3 slovic.py
 aqua_slovic > net.scan ping
 
 # Scan specific subnet
@@ -151,11 +159,11 @@ aqua_slovic > net.scan 10.0.0.0/24
 
 ```powershell
 # Run CMD as Administrator, then:
-python main.py
+python slovic.py
 aqua_slovic > net.scan
 
 # Without admin (ping sweep only)
-python main.py
+python slovic.py
 aqua_slovic > net.scan ping
 ```
 
@@ -243,7 +251,7 @@ Capture network packets in real-time with protocol analysis and credential detec
 #### Linux Examples
 
 ```bash
-sudo python3 main.py
+sudo python3 slovic.py
 
 # Capture all traffic
 aqua_slovic > net.sniff on
@@ -265,7 +273,7 @@ aqua_slovic > net.sniff off
 
 ```powershell
 # Run as Administrator
-python main.py
+python slovic.py
 
 aqua_slovic > net.sniff on
 aqua_slovic > net.sniff on tcp port 80
@@ -298,7 +306,7 @@ Perform ARP cache poisoning to position yourself as a Man-in-the-Middle between 
 #### Linux Examples
 
 ```bash
-sudo python3 main.py
+sudo python3 slovic.py
 
 # Spoof a target (gateway auto-detected)
 aqua_slovic > arp.spoof on 192.168.1.50
@@ -315,7 +323,7 @@ aqua_slovic > arp.spoof off
 
 ```powershell
 # Run as Administrator
-python main.py
+python slovic.py
 
 aqua_slovic > arp.spoof on 192.168.1.50
 aqua_slovic > arp.spoof off
@@ -345,7 +353,7 @@ Intercept DNS queries and redirect domains to your chosen IP addresses.
 #### Linux Examples
 
 ```bash
-sudo python3 main.py
+sudo python3 slovic.py
 
 # Redirect a specific domain
 aqua_slovic > dns.spoof add example.com 192.168.1.10
@@ -368,7 +376,7 @@ aqua_slovic > dns.spoof off
 
 ```powershell
 # Run as Administrator
-python main.py
+python slovic.py
 
 aqua_slovic > dns.spoof add example.com 10.0.0.5
 aqua_slovic > dns.spoof on
@@ -404,7 +412,7 @@ A transparent HTTP proxy for inspecting and modifying web traffic.
 #### Linux Examples
 
 ```bash
-python3 main.py
+python3 slovic.py
 
 # Start on default port
 aqua_slovic > http.proxy on
@@ -422,7 +430,7 @@ aqua_slovic > http.proxy off
 #### Windows Examples
 
 ```powershell
-python main.py
+python slovic.py
 
 aqua_slovic > http.proxy on 8080
 aqua_slovic > http.proxy inject alert('Hello from AQUA_SLOVIC')
@@ -460,7 +468,7 @@ aqua_slovic > env
 
 ```bash
 # Linux
-sudo python3 main.py
+sudo python3 slovic.py
 
 aqua_slovic > net.internet                             # Check active connection and device count
 aqua_slovic > net.scan                                 # Scan the connected subnet
@@ -470,7 +478,7 @@ aqua_slovic > net.scan                                 # Scan the connected subn
 
 ```bash
 # Linux (requires sudo)
-sudo python3 main.py
+sudo python3 slovic.py
 
 aqua_slovic > net.scan                                # Step 1: Find devices
 aqua_slovic > arp.spoof on 192.168.1.50               # Step 2: MITM target
@@ -484,7 +492,7 @@ aqua_slovic > arp.spoof off                            # Step 5: Restore ARP
 
 ```bash
 # Linux (requires sudo)
-sudo python3 main.py
+sudo python3 slovic.py
 
 aqua_slovic > arp.spoof on 192.168.1.50               # MITM the target
 aqua_slovic > dns.spoof add evil-site.com 192.168.1.10 # Redirect domain
@@ -497,7 +505,7 @@ aqua_slovic > arp.spoof off
 ### Example 4: HTTP Proxy with JS Injection
 
 ```bash
-python3 main.py
+python3 slovic.py
 
 aqua_slovic > http.proxy on 8080
 aqua_slovic > http.proxy inject document.title='Hacked by AQUA_SLOVIC'
@@ -515,7 +523,7 @@ aqua_slovic > http.proxy off
 
 | OS | Solution |
 |---|---|
-| Linux | Run with `sudo`: `sudo python3 main.py` |
+| Linux | Run with `sudo`: `sudo python3 slovic.py` |
 | Windows | Right-click CMD/PowerShell -> **"Run as administrator"** |
 
 ### "Scapy not available" / Import errors
@@ -552,21 +560,27 @@ aqua_slovic > http.proxy on 9090         # Use a different port
 
 ```
 slovic/
-├-- main.py                        # Entry point
-├-- setup.py                       # Package installer
-├-- requirements.txt               # Python dependencies
-├-- README.md                      # This file
-└-- aquaslovic/
-    ├-- __init__.py
-    ├-- cli.py                     # Interactive shell
-    └-- core/
-        ├-- __init__.py
-        ├-- utils.py               # Cross-platform utilities
-        ├-- scanner.py             # Network device discovery
-        ├-- sniffer.py             # Packet capture & analysis
-        ├-- arpspoof.py            # ARP cache poisoning
-        ├-- dnsspoof.py            # DNS query spoofing
-        └-- httpproxy.py           # HTTP proxy & injection
+|-- slovic.py                      # Bootstrap loader (key prompt + decryption)
+|-- description.md                 # Project description
+|-- requirements.txt               # Python dependencies
+|-- README.md                      # This file
+|-- .gitignore                     # Protects source and key files
+|-- encrypted/
+    |-- source.dat                 # Encrypted source code (pushed to GitHub)
+|-- aquaslovic/                    # Source code (gitignored, local only)
+    |-- __init__.py
+    |-- cli.py                     # Interactive shell
+    |-- core/
+        |-- __init__.py
+        |-- utils.py               # Cross-platform utilities
+        |-- scanner.py             # Network device discovery
+        |-- sniffer.py             # Packet capture & analysis
+        |-- arpspoof.py            # ARP cache poisoning
+        |-- dnsspoof.py            # DNS query spoofing
+        |-- httpproxy.py           # HTTP proxy & injection
+|-- key_generator.py               # Key generator (gitignored, local only)
+|-- encrypt_project.py             # Source encryptor (gitignored, local only)
+|-- master.key                     # Master encryption key (gitignored, local only)
 ```
 
 ---

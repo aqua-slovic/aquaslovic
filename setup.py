@@ -11,6 +11,7 @@ setup(
         "colorama>=0.4.6",
         "netifaces>=0.11.0",
         "tqdm>=4.65.0",
+        "cryptography>=41.0.0",
     ],
     entry_points={
         "console_scripts": [

@@ -1,0 +1,36 @@
+# -- AquaSlovic .gitignore --
+
+# Key generator and encryption tools (NEVER push these)
+key_generator.py
+encrypt_project.py
+master.key
+*.key
+
+# Source code (only encrypted version goes to GitHub)
+aquaslovic/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Distribution
+*.egg-info/
+dist/
+build/
