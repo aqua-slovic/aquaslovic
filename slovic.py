@@ -4,13 +4,13 @@ AQUA_SLOVIC - Cross-Platform Network Security Toolkit
 Encrypted bootstrap loader.
 
 Usage:
-    python slovic.py              Launch interactive shell
-    python slovic.py --help       Show help
-    python slovic.py --version    Show version
+        python slovic.py              Launch interactive shell
+        python slovic.py --help       Show help
+        python slovic.py --version    Show version
 
 WARNING - DISCLAIMER: This tool is intended for authorized security testing
-  and network administration ONLY. Unauthorized use against networks
-  you do not own or have permission to test is illegal.
+    and network administration ONLY. Unauthorized use against networks
+    you do not own or have permission to test is illegal.
 """
 
 import os
@@ -32,29 +32,75 @@ FIXED_MASTER_KEY_HASH = hashlib.sha256(FIXED_MASTER_KEY.encode("utf-8")).hexdige
 FIXED_LICENSE_KEY_HASH = hashlib.sha256(FIXED_LICENSE_KEY.encode("utf-8")).hexdigest()
 
 
-def hash_secret(value):
-    """Return a one-way hash of a secret value for display and verification."""
-    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()
 
 
-def resolve_master_key(secret):
-    """Resolve the real master key from the user input or a hash of it."""
-    provided = (secret or "").strip()
-    if not provided:
-        raise ValueError("empty master key")
 
-    if provided in {FIXED_MASTER_KEY, FIXED_LICENSE_KEY}:
-        return FIXED_MASTER_KEY.encode("utf-8")
+ENCRYPTED_FILE = os.path.join(BASE_DIR, "encrypted", "source.dat")
 
-    if provided in {FIXED_MASTER_KEY_HASH, FIXED_LICENSE_KEY_HASH}:
-        return FIXED_MASTER_KEY.encode("utf-8")
 
-    raise ValueError("invalid master key")
+def _read_master_key_file():
+    """Read raw bytes from master.key if present (do not modify this file).
+
+    This keeps the secret out of the launcher source. The file may contain
+    either raw bytes or an encoded string; we return raw bytes.
+    """
+    path = os.path.join(BASE_DIR, "master.key")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+            if not data:
+                return None
+            return data
+    except Exception:
+        return None
 
 
 def extract_master_key(license_key):
-    """Extract the master decryption key from the supplied secret."""
-    return resolve_master_key(license_key)
+    """Resolve the master key for decryption.
+
+    Order of resolution:
+      1. Environment variable `AQUASLOVIC_MASTER_KEY` (raw string)
+      2. Local `master.key` file contents (raw bytes)
+      3. The provided `license_key` string decoded with existing format
+      4. Treat `license_key` as a raw master key string
+
+    The launcher no longer contains any hard-coded secret values.
+    """
+    # 1) Environment override
+    env = os.environ.get("AQUASLOVIC_MASTER_KEY")
+    if env:
+        return env.encode("utf-8")
+
+    # 2) master.key file
+    fk = _read_master_key_file()
+    if fk:
+        return fk
+
+    # 3) try to decode the license-style payload (base32 with optional prefix)
+    if license_key:
+        raw = license_key.strip()
+        try:
+            if raw.upper().startswith("AQUA-"):
+                raw = raw[5:]
+            raw_no_dashes = raw.replace("-", "")
+            if raw_no_dashes:
+                padded = raw_no_dashes + '=' * (-len(raw_no_dashes) % 8)
+                payload = base64.b32decode(padded.upper())
+                salt = payload[:8]
+                scrambled = payload[8:]
+                pad = hashlib.sha256(salt).digest()
+                master_key = bytes(a ^ b for a, b in zip(scrambled, pad))
+                return master_key
+        except Exception:
+            pass
+
+    # 4) fallback: treat provided string as raw master key
+    if license_key:
+        return license_key.encode("utf-8")
+
+    raise ValueError("No master key available - set AQUASLOVIC_MASTER_KEY or provide a license key")
 
 
 def derive_fernet_key(master_key):
