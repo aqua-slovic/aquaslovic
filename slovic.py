@@ -20,16 +20,13 @@ import types
 import base64
 import hashlib
 import argparse
+import getpass
 import importlib
 
 __version__ = "1.0.0"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENCRYPTED_FILE = os.path.join(BASE_DIR, "encrypted", "source.dat")
-FIXED_LICENSE_KEY = "MkhdjMJDHJJSHDUJue792736==_"
-FIXED_MASTER_KEY = "aqua==_"
-FIXED_MASTER_KEY_HASH = hashlib.sha256(FIXED_MASTER_KEY.encode("utf-8")).hexdigest()
-FIXED_LICENSE_KEY_HASH = hashlib.sha256(FIXED_LICENSE_KEY.encode("utf-8")).hexdigest()
 
 
 
@@ -309,7 +306,7 @@ WARNING: For authorized security testing only.
         return
 
     try:
-        license_key = input("  Enter master key: ").strip()
+        license_key = getpass.getpass("  Enter master key (hidden): ").strip()
     except (KeyboardInterrupt, EOFError):
         print("\n  Cancelled.")
         sys.exit(0)
@@ -318,7 +315,17 @@ WARNING: For authorized security testing only.
         print("  [-] No key provided. Exiting.")
         sys.exit(1)
 
-    print("  [*] Validating key and decrypting modules...\n")
+    # Validate against the SQLite license database
+    try:
+        from license_db import validate_key
+        if not validate_key(license_key):
+            print("  [-] Access denied. Key not found in license database.")
+            sys.exit(1)
+        print("  [+] License key validated against database.")
+    except ImportError:
+        print("  [!] License database not available, skipping DB check.")
+
+    print("  [*] Decrypting modules...\n")
 
     if not decrypt_and_load(license_key):
         print("  [-] Access denied. Invalid license key.")

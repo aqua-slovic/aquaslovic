@@ -5,6 +5,8 @@ key_generator.py
 encrypt_project.py
 master.key
 *.key
+license_db.py
+licenses.db
 
 # Source code (only encrypted version goes to GitHub)
 aquaslovic/

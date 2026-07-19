@@ -548,9 +548,83 @@ OUI_TABLE = {
 }
 
 
+def lookup_vendor_api(mac):
+    """Lookup vendor from MAC address using the macvendors.com API.
+
+    Free tier allows ~1 request/second. Results are cached in-memory.
+    Returns vendor name string or None if lookup fails.
+    """
+    if not mac or mac in ("??:??:??:??:??:??", "N/A"):
+        return None
+
+    # Normalize MAC format (API accepts colon, dash, or dot separated)
+    normalized = mac.strip().upper()
+
+    # Check in-memory cache first
+    if normalized in _vendor_cache:
+        return _vendor_cache[normalized]
+
+    # Also cache by OUI prefix (first 3 octets)
+    prefix = normalized[:8]
+    if prefix in _vendor_cache:
+        return _vendor_cache[prefix]
+
+    try:
+        import urllib.request
+        import urllib.error
+        import time
+
+        # Rate limiting: wait if needed (1 req/sec for free tier)
+        now = time.time()
+        elapsed = now - _vendor_api_state.get("last_request", 0)
+        if elapsed < 1.0:
+            time.sleep(1.0 - elapsed)
+
+        url = f"https://api.macvendors.com/{normalized}"
+        req = urllib.request.Request(url)
+        req.add_header("User-Agent", "AquaSlovic/1.0")
+
+        with urllib.request.urlopen(req, timeout=3) as response:
+            vendor = response.read().decode("utf-8").strip()
+            _vendor_api_state["last_request"] = time.time()
+
+            if vendor and "errors" not in vendor.lower():
+                # Cache by full MAC and by OUI prefix
+                _vendor_cache[normalized] = vendor
+                _vendor_cache[prefix] = vendor
+                return vendor
+
+    except (urllib.error.HTTPError, urllib.error.URLError):
+        pass
+    except Exception:
+        pass
+
+    _vendor_api_state["last_request"] = time.time()
+    return None
+
+
+# In-memory cache for vendor lookups (prefix -> vendor name)
+_vendor_cache = {}
+# Rate limiting state
+_vendor_api_state = {"last_request": 0}
+
+
 def lookup_vendor(mac):
-    """Lookup vendor from MAC address using OUI prefix."""
-    if not mac or mac == "??:??:??:??:??:??":
+    """Lookup vendor from MAC address.
+
+    Strategy:
+      1. Try the macvendors.com API (most accurate, 250k+ vendors)
+      2. Fall back to the built-in OUI table
+    """
+    if not mac or mac in ("??:??:??:??:??:??", "N/A"):
         return "Unknown"
+
+    # Try API first
+    api_result = lookup_vendor_api(mac)
+    if api_result:
+        return api_result
+
+    # Fallback to local OUI table
     prefix = mac[:8].lower()
     return OUI_TABLE.get(prefix, "Unknown")
+
